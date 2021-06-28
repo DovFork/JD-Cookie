@@ -6,7 +6,7 @@ LDFLAGS=-a -ldflags " -s -X main.Build=${BUILD} -X main.Version=${VER} -X main.V
 build :
 	rm -rf dist
 	mkdir dist
-	go build  ${LDFLAGS} -o ./dist/jdcookie .
+	packr2 build  ${LDFLAGS} -o ./dist/jdcookie .
 	chmod -R +x ./dist
 
 clean:
