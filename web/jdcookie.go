@@ -299,7 +299,6 @@ func (s *httpServer) upsave(c *gin.Context) {
 	////发送数据给 挂机服务器
 	postUrl := os.Getenv("UPSAVE")
 	if postUrl != "" {
-		postUrl = "https://abc.com/saveCookie"
 		var res MSG
 		code := 0
 		err := gout.POST(postUrl).
@@ -325,7 +324,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 			c.JSON(200, MSG{
 				"err":   1,
 				"title": "更新到挂机服务器失败",
-				"msg":   err,
+				"msg":   err.Error(),
 			})
 		} else {
 			errcode := res["err"]
