@@ -2,7 +2,7 @@ package web
 
 import (
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packr/v2"
 	log "github.com/sirupsen/logrus"
@@ -23,8 +23,8 @@ var HTTPServer = &httpServer{}
 func (s *httpServer) Run(addr string) {
 	gin.SetMode(gin.ReleaseMode)
 	s.engine = gin.New()
-	// 创建基于cookie的存储引擎，secret 参数是用于加密的密钥
-	store := cookie.NewStore([]byte("scjtqsnb"))
+	// 创建基于 内存 的存储引擎，secret 参数是用于加密的密钥
+	store := memstore.NewStore([]byte("scjtqsnb"))
 	// 设置session中间件，参数mysession，指的是session的名字，也是cookie的名字
 	// store是前面创建的存储引擎，我们可以替换成其他存储引擎
 	s.engine.Use(sessions.Sessions("mysession", store))
@@ -114,16 +114,4 @@ func (s *httpServer) LoadTemplate(t *template.Template) (*template.Template, err
 	return t, nil
 }
 
-func (s *httpServer) GetclientIP(c *gin.Context) string {
-	session := sessions.Default(c)
-	var ip string
-	if session.Get("clientip") != nil {
-		ip = session.Get("clientip").(string)
-	}
-	if ip == "" {
-		ip = c.ClientIP()
-		session.Set("clientip", ip)
-		session.Save()
-	}
-	return ip
-}
+

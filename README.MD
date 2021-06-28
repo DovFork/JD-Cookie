@@ -26,6 +26,7 @@ chmod +x jdcookie
 ## cmd 中运行 参数和linux一样
 .\jdcookie.exe -d
 ```
+> 环境变量 UPSAVE cookie的推送地址。
 
 
 ## 编译方法
