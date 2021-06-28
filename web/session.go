@@ -58,7 +58,7 @@ func (s *httpServer) getToken(c *gin.Context) *Token {
 	session := sessions.Default(c)
 	token := &Token{}
 	if session.Get("token") != nil {
-		json.Unmarshal([]byte(session.Get("token").(string)),token)
+		json.Unmarshal(session.Get("token").([]byte),token)
 	}
 	return token
 }
@@ -68,7 +68,7 @@ func (s *httpServer) updateToken(c *gin.Context, token *Token) (*Token, error) {
 	session := sessions.Default(c)
 	u := &Token{}
 	if session.Get("token") != nil {
-		json.Unmarshal([]byte(session.Get("token").(string)), u)
+		json.Unmarshal(session.Get("token").([]byte), u)
 	}
 	if token.Token != "" {
 		u.Token = token.Token
@@ -95,7 +95,7 @@ func (s *httpServer) updateToken(c *gin.Context, token *Token) (*Token, error) {
 		u.UserCookie = token.UserCookie
 	}
 	set, _ := json.Marshal(u)
-	session.Set("token", string(set))
+	session.Set("token", set)
 	err := session.Save()
 	return u, err
 }
