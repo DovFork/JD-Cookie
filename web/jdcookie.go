@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
@@ -290,39 +291,64 @@ func (s *httpServer) getJdCookie(resp string, cookie *cookiejar.Jar) string {
 }
 
 func (s *httpServer) upsave(c *gin.Context) {
-	////发送数据给 挂机服务器
-	//postUrl := "https://abc.com/saveCookie"
-	//var res MSG
-	//err := gout.POST(postUrl).
-	//	//Debug(true).
-	//	SetWWWForm(
-	//		gout.H{
-	//			"userCookie": userCookie,
-	//		},
-	//	).
-	//	BindJSON(&res).
-	//	SetHeader(gout.H{
-	//		"Connection":   "Keep-Alive",
-	//		"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
-	//		"Accept":       "application/json, text/plain, */*",
-	//		"User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
-	//	}).
-	//	SetTimeout(timeout).
-	//	F().Retry().Attempt(5).
-	//	WaitTime(time.Millisecond * 500).MaxWaitTime(time.Second * 5).
-	//	Do()
 	//log.Warnf("更新到挂机服务器 res=%v", res)
 	// 清空缓存参数
 	jar, _ = cookiejar.New(nil)
 	var ck = userCookie
 	s_token, cookies, guid, lsid, lstoken, okl_token, token, userCookie = "", "", "", "", "", "", "", ""
-	//if err != nil {
-	//	c.JSON(200, MSG{
-	//		"err":   1,
-	//		"title": "更新到挂机服务器失败",
-	//		"msg":   err,
-	//	})
-	//}
+	////发送数据给 挂机服务器
+	postUrl := os.Getenv("UPSAVE")
+	if postUrl != "" {
+		postUrl = "https://abc.com/saveCookie"
+		var res MSG
+		code := 0
+		err := gout.POST(postUrl).
+			//Debug(true).
+			SetWWWForm(
+				gout.H{
+					"userCookie": userCookie,
+				},
+			).
+			BindJSON(&res).
+			SetHeader(gout.H{
+				"Connection":   "Keep-Alive",
+				"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
+				"Accept":       "application/json, text/plain, */*",
+				"User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
+			}).
+			Code(&code).
+			SetTimeout(timeout).
+			F().Retry().Attempt(5).
+			WaitTime(time.Millisecond * 500).MaxWaitTime(time.Second * 5).
+			Do()
+		if err != nil || code != 200 {
+			c.JSON(200, MSG{
+				"err":   1,
+				"title": "更新到挂机服务器失败",
+				"msg":   err,
+			})
+		} else {
+			errcode := res["err"]
+			if errcode == nil {
+				errcode = 0
+			}
+			title := res["title"]
+			if title == nil {
+				title = "更新到挂机服务成功"
+			}
+			msg := res["msg"]
+			if msg == nil {
+				msg = "cookie= " + ck
+			}
+			c.JSON(200, MSG{
+				"err":   errcode,
+				"title": title,
+				"msg":   msg,
+			})
+		}
+		return
+	}
+
 	c.JSON(200, MSG{
 		"err":   0,
 		"title": "提取cookie成功",

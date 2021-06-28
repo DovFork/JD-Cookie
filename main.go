@@ -3,21 +3,24 @@ package main
 import (
 	"flag"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	log "github.com/sirupsen/logrus"
-	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"github.com/scjtqs/jd_cookie/util"
 	"github.com/scjtqs/jd_cookie/web"
+	log "github.com/sirupsen/logrus"
+	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"os"
 	"os/signal"
 	"path"
 	"time"
 )
 
-var h bool
-var d bool
-var Version ="v2.0.0"
+var (
+	h       bool
+	d       bool
+	Version = "v2.0.0"
+	Build   string
+)
 
-func init()  {
+func init() {
 	var debug bool
 	flag.BoolVar(&d, "d", false, "running as a daemon")
 	flag.BoolVar(&debug, "D", false, "debug mode")
@@ -32,25 +35,25 @@ func init()  {
 		log.Errorf("rotatelogs init err: %v", err)
 		panic(err)
 	}
-	LogLevel:="info"
+	LogLevel := "info"
 	if debug {
 		log.SetReportCaller(true)
-		LogLevel="debug"
+		LogLevel = "debug"
 	}
 	log.AddHook(util.NewLocalHook(w, logFormatter, util.GetLogLevel(LogLevel)...))
 }
 
-func main()  {
+func main() {
 	if h {
 		help()
 	}
 	if d {
 		web.Daemon()
 	}
-	log.Infof("欢迎使用jdcookie提取器 by scjtqs %s",Version)
+	log.Infof("欢迎使用jdcookie提取器 by scjtqs %s", Version)
 	log.Info("当前开源版本：获取cookie成功后，不会自动提交到挂机服务器，需要自行修改了")
 	web.HTTPServer.Run(":29099")
-	c:= make(chan os.Signal, 1)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
 }
@@ -65,7 +68,7 @@ Usage:
 server [OPTIONS]
 
 Options:
-`, Version)
+`, Version, Build)
 	flag.PrintDefaults()
 	os.Exit(0)
 }
