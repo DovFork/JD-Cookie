@@ -27,7 +27,10 @@ chmod +x jdcookie
 .\jdcookie.exe -d
 ```
 > 环境变量 UPSAVE cookie的推送地址。
-
+>
+> 简单做了一个docker镜像 scjtqs/jd_cookie:latest 
+> 
+> 支持  arm/arm64/i386/amd64
 
 ## 编译方法
 ```bash
