@@ -26,6 +26,10 @@ chmod +x jdcookie
 ## cmd 中运行 参数和linux一样
 .\jdcookie.exe -d
 ```
+v2.0.2
+> 增加了cookie存入db的支持
+
+v 2.0.1
 > 环境变量 UPSAVE cookie的推送地址。
 >
 > 简单做了一个docker镜像 scjtqs/jd_cookie:latest 

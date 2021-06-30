@@ -30,7 +30,7 @@ func (s *httpServer) getCookieJar(c *gin.Context) *cookiejar.Jar {
 	jar, _ := cookiejar.New(nil)
 	session := sessions.Default(c)
 	if session.Get("cookieJar") != nil {
-		msgpack.Unmarshal(session.Get("cookieJar").([]byte),jar)
+		msgpack.Unmarshal(session.Get("cookieJar").([]byte), jar)
 	}
 	return jar
 }
@@ -38,7 +38,7 @@ func (s *httpServer) getCookieJar(c *gin.Context) *cookiejar.Jar {
 // 写入cookieJar
 func (s *httpServer) updateCookieJar(c *gin.Context, jar *cookiejar.Jar) error {
 	session := sessions.Default(c)
-	res,_:=msgpack.Marshal(jar)
+	res, _ := msgpack.Marshal(jar)
 	session.Set("cookieJar", res)
 	return session.Save()
 }
@@ -52,13 +52,15 @@ type Token struct {
 	Okl_token  string `json:"okl_token"`
 	Token      string `json:"token"`
 	UserCookie string `json:"user_cookie"`
+	PtPin      string `json:"pt_pin"`
+	PtKey      string `json:"pt_key"`
 }
 
 func (s *httpServer) getToken(c *gin.Context) *Token {
 	session := sessions.Default(c)
 	token := &Token{}
 	if session.Get("token") != nil {
-		json.Unmarshal(session.Get("token").([]byte),token)
+		json.Unmarshal(session.Get("token").([]byte), token)
 	}
 	return token
 }
@@ -93,6 +95,12 @@ func (s *httpServer) updateToken(c *gin.Context, token *Token) (*Token, error) {
 	}
 	if token.UserCookie != "" {
 		u.UserCookie = token.UserCookie
+	}
+	if token.PtKey != "" {
+		u.PtKey = token.PtKey
+	}
+	if token.PtPin != "" {
+		u.PtPin = token.PtPin
 	}
 	set, _ := json.Marshal(u)
 	session.Set("token", set)

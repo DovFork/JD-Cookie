@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -293,6 +292,8 @@ func (s *httpServer) getJdCookie(resp string, cookie *cookiejar.Jar, c *gin.Cont
 	}
 	token.Cookies = "TrackerID=" + TrackerID + "; pt_key=" + pt_key + "; pt_pin=" + pt_pin + "; pt_token=" + pt_token + "; pwdt_id=" + pwdt_id + "; s_key=" + s_key + "; s_pin=" + s_pin + "; wq_skey="
 	token.UserCookie = "pt_key=" + pt_key + ";pt_pin=" + pt_pin + ";"
+	token.PtPin = pt_pin
+	token.PtKey = pt_key
 	s.updateToken(c, token)
 	log.Info("############  登录成功，获取到 Cookie  #############")
 	log.Infof("Cookie1=%s", token.UserCookie)
@@ -301,12 +302,18 @@ func (s *httpServer) getJdCookie(resp string, cookie *cookiejar.Jar, c *gin.Cont
 }
 
 func (s *httpServer) upsave(c *gin.Context) {
-	//log.Warnf("更新到挂机服务器 res=%v", res)
 	// 清空缓存参数
 	token := s.getToken(c)
+	//写db
+	if s.Conf.DbConf.DbEnable {
+		_, err := s.cookiesRepo.UpdateCookie(token.PtPin, token.PtKey, token.UserCookie)
+		if err != nil {
+			log.Errorf("save cookie to db faild %s", err.Error())
+		}
+	}
 	s.cleanSession(c)
 	////发送数据给 挂机服务器
-	postUrl := os.Getenv("UPSAVE")
+	postUrl := s.Conf.UpSave
 	if postUrl != "" {
 		var res MSG
 		code := 0

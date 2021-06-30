@@ -5,7 +5,10 @@ import (
 	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packr/v2"
+	"github.com/scjtqs/jd_cookie/config"
+	"github.com/scjtqs/jd_cookie/web/repo"
 	log "github.com/sirupsen/logrus"
+	"go.uber.org/dig"
 	"html/template"
 	"net/http"
 	"os"
@@ -16,11 +19,18 @@ import (
 type httpServer struct {
 	engine *gin.Engine
 	HTTP   *http.Server
+	ct *dig.Container
+	Conf *config.Conf
+	cookiesRepo repo.CookiesRepository
 }
 
 var HTTPServer = &httpServer{}
 
-func (s *httpServer) Run(addr string) {
+func (s *httpServer) Run(addr string,ct *dig.Container) {
+	s.ct=ct
+	ct.Invoke(func(conf *config.Conf) {
+		s.Conf=conf
+	})
 	gin.SetMode(gin.ReleaseMode)
 	s.engine = gin.New()
 	// 创建基于 内存 的存储引擎，secret 参数是用于加密的密钥
@@ -75,6 +85,9 @@ func (s *httpServer) Run(addr string) {
 	s.engine.POST("/auth")
 	//s.engine.GET("/test",s.test)
 
+	// 初始化db
+	s.initdb()
+
 	go func() {
 		log.Infof("jdcookie提取 服务器已启动: %v", addr)
 		log.Info("请用浏览器打开url: http://公网ip或者域名:29099")
@@ -112,6 +125,21 @@ func (s *httpServer) LoadTemplate(t *template.Template) (*template.Template, err
 		}
 	}
 	return t, nil
+}
+
+func (s *httpServer) initdb()  {
+	if s.Conf.DbConf.DbEnable {
+		var err error
+		err=repo.InitRDBMS(s.Conf.DbConf)
+		if err != nil {
+			log.Fatalf("faild to init db error= %s",err.Error())
+		}
+		s.cookiesRepo ,err = repo.NewCookieRepo()
+		if err != nil {
+			log.Fatalf("faild to get initd db error= %s",err.Error())
+		}
+		s.cookiesRepo.InitTables()
+	}
 }
 
 

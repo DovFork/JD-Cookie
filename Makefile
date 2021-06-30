@@ -1,7 +1,7 @@
 BUILD=`date +%FT%T%z`
 VER=v2.0.1
 
-LDFLAGS=-a -ldflags " -s -X main.Build=${BUILD} -X main.Version=${VER} -X main.Version=${Version} -extldflags '-static'"
+LDFLAGS=-ldflags " -s -X main.Build=${BUILD} -X main.Version=${Version}"
 
 build :
 	rm -rf dist

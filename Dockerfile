@@ -12,7 +12,16 @@ ADD . /src
 ENV GOPROXY "http://goproxy.cn,direct"
 ENV CGO_ENABLED "0"
 ENV GO111MODULE "on"
+
 ENV UPSAVE ""
+
+ENV DB_ENABLE "false"
+ENV DB_HOST ""
+ENV DB_PORT ""
+ENV DB_USER ""
+ENV DB_PASS ""
+ENV DB_DATABASE ""
+
 RUN cd /src \
     && apk add --no-cache  make \
     && rm -rf dist \
