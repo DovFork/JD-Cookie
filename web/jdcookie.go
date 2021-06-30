@@ -184,8 +184,8 @@ func (s *httpServer) setp2(c *gin.Context) (string, error) {
 func (s *httpServer) getCookie(c *gin.Context) {
 	//session := sessions.Default(c)
 	//cookies=session.Get("cookies").(string)
-	check, err := s.checkLogin(c)
 	jar := s.getCookieJar(c)
+	check, err := s.checkLogin(c, jar)
 	if err != nil {
 		c.JSON(200, MSG{
 			"err": 1,
@@ -212,13 +212,13 @@ func (s *httpServer) getCookie(c *gin.Context) {
 }
 
 // 校验登录状态
-func (s *httpServer) checkLogin(c *gin.Context) (string, error) {
+func (s *httpServer) checkLogin(c *gin.Context, jar *cookiejar.Jar) (string, error) {
 	token := s.getToken(c)
 	ip := s.GetclientIP(c)
 	if token.Cookies == "" {
 		return "", errors.New("empty cookies")
 	}
-	jar := s.getCookieJar(c)
+	//jar := s.getCookieJar(c)
 	timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
 	getUrl := "https://plogin.m.jd.com/cgi-bin/m/tmauthchecktoken?&token=" + token.Token + "&ou_state=0&okl_token=" + token.Okl_token
 	client := &http.Client{
