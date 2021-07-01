@@ -6,6 +6,7 @@ import (
 )
 
 type Cookies struct {
+	Id         int64     `xorm:"bigint(20) pk notnull autoincr 'id'"`
 	PtPin      string    `xorm:"unique varchar(100) notnull 'pt_pin'"`
 	UserCookie string    `xorm:"text notnull 'user_cookie'"`
 	PtKey      string    `xorm:"varchar(255) notnull 'pt_key'"`
@@ -34,7 +35,7 @@ func NewCookieRepo() (*CookiesRepo, error) {
 }
 
 // 初始化db
-var sql = "CREATE TABLE IF NOT EXISTS `cookies` (`pt_pin` varchar(100) NOT NULL,`user_cookie` text NOT NULL COMMENT '用户cookie', `pt_key` varchar(255) NOT NULL,`createtime` datetime DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`pt_pin`))ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4"
+var sql = "CREATE TABLE IF NOT EXISTS `cookies` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`pt_pin` varchar(100) NOT NULL,`user_cookie` text NOT NULL COMMENT '用户cookie', `pt_key` varchar(255) NOT NULL,`createtime` datetime DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),UNIQUE KEY (`pt_pin`))ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4"
 
 func (cksp *CookiesRepo) InitTables() {
 	ext, err := cksp.db.DB().IsTableExist("cookies")

@@ -26,6 +26,9 @@ chmod +x jdcookie
 ## cmd 中运行 参数和linux一样
 .\jdcookie.exe -d
 ```
+v2.0.3
+数据库做调整、主键变更为id字段，方便一些用户做排序。
+
 v2.0.2
 > 增加了cookie存入db的支持
 
