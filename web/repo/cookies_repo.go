@@ -54,7 +54,8 @@ func (cksp *CookiesRepo) InitTables() {
 func (cksp *CookiesRepo) UpdateCookie(pt_pin, pt_key, usercookie string) (*Cookies, error) {
 	var cks Cookies
 	createTime := time.Unix(time.Now().Unix(), 0)
-	_, err := cksp.db.DB().Exec("REPLACE INTO cookies (`pt_pin`,`user_cookie`,`pt_key`,`createtime`) VALUES(?,?,?,?)", pt_pin, usercookie, pt_key, createTime)
+	//_, err := cksp.db.DB().Exec("REPLACE INTO cookies (`pt_pin`,`user_cookie`,`pt_key`,`createtime`) VALUES(?,?,?,?)", pt_pin, usercookie, pt_key, createTime)
+	_, err := cksp.db.DB().Exec("INSERT INTO cookies (`pt_pin`,`user_cookie`,`pt_key`,`createtime`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `user_cookie`=VALUES(`user_cookie`),`pt_key`=VALUES(`pt_key`),`createtime`=VALUES(`createtime`)", pt_pin, usercookie, pt_key, createTime)
 	if err != nil {
 		return nil, err
 	}

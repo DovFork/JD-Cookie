@@ -26,8 +26,11 @@ chmod +x jdcookie
 ## cmd 中运行 参数和linux一样
 .\jdcookie.exe -d
 ```
+v2.0.4
+> 调整更新的sql语法，将replace into替换为 INSERT .... ON DUPLICATE KEY UPDATE。修复更新cookie引发id变更的问题（replace更新是先删在insert)。因小伙伴要求id顺序不能变。 
+
 v2.0.3
-数据库做调整、主键变更为id字段，方便一些用户做排序。
+> 数据库做调整、主键变更为id字段，方便一些用户做排序。
 
 v2.0.2
 > 增加了cookie存入db的支持

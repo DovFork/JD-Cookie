@@ -22,6 +22,9 @@ ENV DB_USER ""
 ENV DB_PASS ""
 ENV DB_DATABASE ""
 
+##替换官方源为国内源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
+
 RUN cd /src \
     && apk add --no-cache  make \
     && rm -rf dist \
