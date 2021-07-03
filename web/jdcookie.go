@@ -337,6 +337,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 			WaitTime(time.Millisecond * 500).MaxWaitTime(time.Second * 5).
 			Do()
 		if err != nil || code != 200 {
+			log.Errorf("upsave notify post  usercookie to %s faild",postUrl)
 			c.JSON(200, MSG{
 				"err":   1,
 				"title": "更新到挂机服务器失败",

@@ -15,7 +15,8 @@
     <script type="text/javascript" src="./assets/js/sweetalert2.js"></script>
     <script type="text/javascript" src="./assets/js/qrcode.min.js"></script>
     <script type="text/javascript" src="./assets/js/prefixfree.min.js"></script>
-    
+<!--    <script type="text/javascript" src="https://cdn.bootcss.com/clipboard.js/2.0.0/clipboard.min.js"></script>-->
+
     <link rel="stylesheet" type="text/css" href="./assets/css/normalize.min.css">
     <link rel="stylesheet" type="text/css" href="./assets/css/style.css">
     <link rel="stylesheet" type="text/css" href="./assets/css/codemirror.min.css">
@@ -32,6 +33,7 @@
             <header>
                 <h1 style="margin-top: 100px; color: #000000">用京东app扫码</h1>
                 <h1 style="margin-top: 10px; color: #000000">自动更新cookie</h1>
+                <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs/jd_cookie" target="_blank">scjtqs</a></h1>
                 <button
                     id="cookietools" title="手机扫描二维码登录">点击扫码获取 Cookie</button>
                 <span style="display: none;">
@@ -120,13 +122,27 @@
                                     userCookie: userCookie,
                                 }, function (data) {
                                     let icon = (data.err == 0) ? "success" : "error"
-                                    Swal.fire({
-                                    title: data.title,
-                                    text: data.msg,
-                                    icon: icon
-                                }).then((result) => {
-                                    window.location.reload(true);
-                                    })
+                                    if (data.err == 0){
+                                        Swal.fire({
+                                            title: data.title,
+                                            text: data.msg,
+                                            html: '<div class="cookieCon" style="font-size:12px;">' +
+                                                userCookie + '</div>',
+                                            icon: icon,
+                                            confirmButtonText: "复制Cookie",
+                                        }).then((result) => {
+                                            copyToClip(userCookie);
+                                            window.location.reload(true);
+                                        })
+                                    }else{
+                                        Swal.fire({
+                                            title: data.title,
+                                            text: data.msg,
+                                            icon: icon
+                                        }).then((result) => {
+                                            window.location.reload(true);
+                                        })
+                                    }
                                 });
 
 
