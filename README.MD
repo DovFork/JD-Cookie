@@ -78,7 +78,7 @@ docker run -d -p 29099:29099  scjtqs/jd_cookie:latest
 docker pull jd_cookie scjtqs/jd_cookie:latest
 ## UPSAVE 默认是空，不会推送到其他地址；DB_ENABLE默认为false，不会记录cookie到db。
 docker run -d \
--p 2099:2099 \
+-p 29099:29099 \
 -e UPSAVE="http://192.168.0.12:8080/savecookie" \
 -e DB_ENABLE="true" \
 -e DB_HOST="192.168.0.13" \
@@ -88,3 +88,5 @@ docker run -d \
 -e DB_DATABASE="cookies" \
 --name jd_cookie scjtqs/jd_cookie:latest
 ```
+
+### 佛系更新，够用就行。欢迎pr和建议。欢迎start
