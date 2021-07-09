@@ -6,7 +6,7 @@ LDFLAGS=-ldflags " -s -X main.Build=${BUILD} -X main.Version=${Version}"
 build :
 	rm -rf dist
 	mkdir dist
-	packr2 build  ${LDFLAGS} -o ./dist/jdcookie .
+	CGO_ENABLED=1 CGO_LDFLAGS="-static" packr2 build  ${LDFLAGS} -installsuffix cgo -o ./dist/jdcookie .
 	chmod -R +x ./dist
 
 clean:

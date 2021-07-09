@@ -92,7 +92,7 @@ func (s *httpServer) Run(addr string,ct *dig.Container) {
 		log.Infof("jdcookie提取 服务器已启动: %v", addr)
 		log.Info("请用浏览器打开url: http://公网ip或者域名:29099")
 		log.Warn("请务必使用公网访问，否则读取到的客户端Ip会是内网Ip，不是公网Ip.")
-		log.Warnf("v2.x 版本 是服务端部署版本。客户端需要使用浏览器打开，让浏览器和手机在同一个网络下（或者直接用手机打开浏览器）")
+		log.Warnf("v3.x 版本 是服务端部署版本。客户端需要使用浏览器打开，让浏览器和手机在同一个网络下（或者直接用手机打开浏览器）")
 		s.HTTP = &http.Server{
 			Addr:    addr,
 			Handler: s.engine,

@@ -1,4 +1,5 @@
-FROM golang:1.16-alpine as builder
+FROM golang:1.16-alpine3.13 as builder
+
 
 LABEL name="jd_cookie server"
 LABEL version="2.0.1"
@@ -13,6 +14,20 @@ ENV GOPROXY "http://goproxy.cn,direct"
 ENV CGO_ENABLED "0"
 ENV GO111MODULE "on"
 
+
+
+##替换官方源为国内源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
+
+RUN cd /src \
+    && apk add --no-cache --update gcc musl-dev  make \
+    && rm -rf dist \
+    && go get -u github.com/gobuffalo/packr/v2/packr2 \
+    && go mod tidy \
+    && make
+
+FROM alpine:3.13 as production
+
 ENV UPSAVE ""
 
 ENV DB_ENABLE "false"
@@ -21,18 +36,7 @@ ENV DB_PORT ""
 ENV DB_USER ""
 ENV DB_PASS ""
 ENV DB_DATABASE ""
-
-##替换官方源为国内源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
-
-RUN cd /src \
-    && apk add --no-cache  make \
-    && rm -rf dist \
-    && go get -u github.com/gobuffalo/packr/v2/packr2 \
-    && go mod tidy \
-    && make
-
-FROM alpine:3.13 as production
+ENV DB_TYPE "mysql"
 
 COPY --from=builder /src/dist /opt/app
 

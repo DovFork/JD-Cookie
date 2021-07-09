@@ -7,10 +7,10 @@ import (
 
 type Cookies struct {
 	Id         int64     `xorm:"bigint(20) pk notnull autoincr 'id'"`
-	PtPin      string    `xorm:"unique varchar(100) notnull 'pt_pin'"`
+	PtPin      string    `xorm:"notnull unique 'pt_pin'"`
 	UserCookie string    `xorm:"text notnull 'user_cookie'"`
-	PtKey      string    `xorm:"varchar(255) notnull 'pt_key'"`
-	CreateTime time.Time `xorm:"datetime 'createtime'"`
+	PtKey      string    `xorm:"notnull 'pt_key'"`
+	CreateTime time.Time `xorm:"datetime updated 'createtime'"`
 }
 
 // TableName 数据库名称
@@ -35,7 +35,7 @@ func NewCookieRepo() (*CookiesRepo, error) {
 }
 
 // 初始化db
-var sql = "CREATE TABLE IF NOT EXISTS `cookies` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`pt_pin` varchar(100) NOT NULL,`user_cookie` text NOT NULL COMMENT '用户cookie', `pt_key` varchar(255) NOT NULL,`createtime` datetime DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),UNIQUE KEY (`pt_pin`))ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4"
+//var sql = "CREATE TABLE IF NOT EXISTS `cookies` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`pt_pin` varchar(100) NOT NULL,`user_cookie` text NOT NULL COMMENT '用户cookie', `pt_key` varchar(255) NOT NULL,`createtime` datetime DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),UNIQUE KEY (`pt_pin`))ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4"
 
 func (cksp *CookiesRepo) InitTables() {
 	ext, err := cksp.db.DB().IsTableExist("cookies")
@@ -43,27 +43,34 @@ func (cksp *CookiesRepo) InitTables() {
 		panic("db error: " + err.Error())
 	}
 	if !ext {
-		res, err := cksp.db.DB().Exec(sql)
+		err := cksp.db.DB().CreateTables(Cookies{})
 		if err != nil {
 			log.Errorf("faild to init db err=%v", err)
 		}
-		log.Infof("init table success res= %v", res)
 	}
 }
 
 func (cksp *CookiesRepo) UpdateCookie(pt_pin, pt_key, usercookie string) (*Cookies, error) {
 	var cks Cookies
-	createTime := time.Unix(time.Now().Unix(), 0)
-	//_, err := cksp.db.DB().Exec("REPLACE INTO cookies (`pt_pin`,`user_cookie`,`pt_key`,`createtime`) VALUES(?,?,?,?)", pt_pin, usercookie, pt_key, createTime)
-	_, err := cksp.db.DB().Exec("INSERT INTO cookies (`pt_pin`,`user_cookie`,`pt_key`,`createtime`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `user_cookie`=VALUES(`user_cookie`),`pt_key`=VALUES(`pt_key`),`createtime`=VALUES(`createtime`)", pt_pin, usercookie, pt_key, createTime)
+	has, err := cksp.db.DB().Where("pt_pin = ?", pt_pin).Get(&cks)
+	cksNew := &Cookies{
+		PtPin:      pt_pin,
+		PtKey:      pt_key,
+		UserCookie: usercookie,
+	}
 	if err != nil {
 		return nil, err
 	}
-	cks.PtPin = pt_pin
-	cks.PtKey = pt_key
-	cks.UserCookie = usercookie
-	cks.CreateTime = createTime
-	return &cks, nil
+	if !has {
+		log.Warnf("%s record not exits", pt_pin)
+		_, err = cksp.db.DB().Insert(cksNew)
+		return cksNew, err
+	}
+	cks.UserCookie=usercookie
+	cks.PtKey=pt_key
+	cks.PtPin=pt_pin
+	_, err = cksp.db.DB().Id(cks.Id).Update(cksNew)
+	return &cks, err
 }
 
 func (cksp *CookiesRepo) GetCookieByPtPin(pt_pin string) (*Cookies, error) {

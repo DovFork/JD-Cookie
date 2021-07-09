@@ -23,11 +23,11 @@ type DbConf struct {
 
 // 通过路径获取配置信息
 func GetConfigFronPath(c string) *Conf {
-	conf:= &Conf{}
+	conf := &Conf{}
 	if !util.PathExists(c) {
 		conf = defaultConf()
-	}else {
-		err:=json.Unmarshal([]byte(util.ReadAllText(c)),conf)
+	} else {
+		err := json.Unmarshal([]byte(util.ReadAllText(c)), conf)
 		if err != nil {
 			conf = defaultConf()
 		}
@@ -68,6 +68,9 @@ func parseConfFromEnv(c *Conf) *Conf {
 	}
 	if os.Getenv("DB_DATABASE") != "" {
 		c.DbConf.DbDatabase = os.Getenv("DB_DATABASE")
+	}
+	if os.Getenv("DB_TYPE") != "" {
+		c.DbConf.DbType = os.Getenv("DB_TYPE")
 	}
 	return c
 }
