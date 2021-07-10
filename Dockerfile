@@ -2,22 +2,22 @@ FROM golang:1.16-alpine3.13 as builder
 
 
 LABEL name="jd_cookie server"
-LABEL version="2.0.1"
+LABEL version="3.0.1"
 LABEL author="scjtqs <scjtqs@qq.com>"
 LABEL maintainer="scjtqs <scjtqs@qq.com>"
 LABEL description="simple to get jd cookie"
 
-ARG Version="v2.0.1"
+ARG Version="v3.0.1"
 
 ADD . /src
-ENV GOPROXY "http://goproxy.cn,direct"
+#ENV GOPROXY "http://goproxy.cn,direct"
 ENV CGO_ENABLED "0"
 ENV GO111MODULE "on"
 
 
 
 ##替换官方源为国内源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
+#RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 
 RUN cd /src \
     && apk add --no-cache --update gcc musl-dev  make \
