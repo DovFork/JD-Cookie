@@ -1,10 +1,10 @@
 package web
 
 import (
+	"embed"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
-	"github.com/gobuffalo/packr/v2"
 	"github.com/scjtqs/jd_cookie/config"
 	"github.com/scjtqs/jd_cookie/web/repo"
 	log "github.com/sirupsen/logrus"
@@ -12,24 +12,27 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
 type httpServer struct {
-	engine *gin.Engine
-	HTTP   *http.Server
-	ct *dig.Container
-	Conf *config.Conf
+	engine      *gin.Engine
+	HTTP        *http.Server
+	ct          *dig.Container
+	Conf        *config.Conf
 	cookiesRepo repo.CookiesRepository
 }
 
 var HTTPServer = &httpServer{}
 
-func (s *httpServer) Run(addr string,ct *dig.Container) {
-	s.ct=ct
+func (s *httpServer) Run(addr string, ct *dig.Container) {
+	s.ct = ct
 	ct.Invoke(func(conf *config.Conf) {
-		s.Conf=conf
+		s.Conf = conf
+	})
+	var f embed.FS
+	ct.Invoke(func(file embed.FS) {
+		f = file
 	})
 	gin.SetMode(gin.ReleaseMode)
 	s.engine = gin.New()
@@ -60,15 +63,20 @@ func (s *httpServer) Run(addr string,ct *dig.Container) {
 	})
 
 	//从二进制中加载模板（后缀必须.html)
-	t, _ = s.LoadTemplate(t)
-	s.engine.SetHTMLTemplate(t)
+	templ := template.Must(template.New("").ParseFS(f, "template/html/*.html"))
+	s.engine.SetHTMLTemplate(templ)
 	//静态资源
-	assets := packr.New("assets", "../template/assets")
 	//s.engine.Static("/assets", "./template/assets")
-	s.engine.StaticFS("/assets", assets)
+	s.engine.StaticFS("/public", http.FS(f))
 	s.engine.GET("/", func(c *gin.Context) {
 		s.GetclientIP(c)
-		c.HTML(http.StatusOK, "upcookie.html", gin.H{})
+		var v string
+		ct.Invoke(func(version string) {
+			v=version
+		})
+		c.HTML(http.StatusOK, "upcookie.html", gin.H{
+			"version":v,
+		})
 	})
 
 	// 路由
@@ -90,7 +98,7 @@ func (s *httpServer) Run(addr string,ct *dig.Container) {
 
 	go func() {
 		log.Infof("jdcookie提取 服务器已启动: %v", addr)
-		log.Info("请用浏览器打开url: http://公网ip或者域名:29099")
+		log.Info("请用浏览器打开url: http://公网ip或者域名%s",addr)
 		log.Warn("请务必使用公网访问，否则读取到的客户端Ip会是内网Ip，不是公网Ip.")
 		log.Warnf("v3.x 版本 是服务端部署版本。客户端需要使用浏览器打开，让浏览器和手机在同一个网络下（或者直接用手机打开浏览器）")
 		s.HTTP = &http.Server{
@@ -107,39 +115,17 @@ func (s *httpServer) Run(addr string,ct *dig.Container) {
 	}()
 }
 
-// loadTemplate loads templates by packr 将html 打包到二进制包
-func (s *httpServer) LoadTemplate(t *template.Template) (*template.Template, error) {
-	box := packr.New("tmp", "../template/html")
-	for _, file := range box.List() {
-		if !strings.HasSuffix(file, ".html") {
-			continue
-		}
-		h, err := box.FindString(file)
-		if err != nil {
-			return nil, err
-		}
-		//拼接方式，组装模板  admin/index.html 这种，方便调用
-		t, err = t.New(strings.Replace(file, "html/", "", 1)).Parse(h)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return t, nil
-}
-
-func (s *httpServer) initdb()  {
+func (s *httpServer) initdb() {
 	if s.Conf.DbConf.DbEnable {
 		var err error
-		err=repo.InitRDBMS(s.Conf.DbConf)
+		err = repo.InitRDBMS(s.Conf.DbConf)
 		if err != nil {
-			log.Fatalf("faild to init db error= %s",err.Error())
+			log.Fatalf("faild to init db error= %s", err.Error())
 		}
-		s.cookiesRepo ,err = repo.NewCookieRepo()
+		s.cookiesRepo, err = repo.NewCookieRepo()
 		if err != nil {
-			log.Fatalf("faild to get initd db error= %s",err.Error())
+			log.Fatalf("faild to get initd db error= %s", err.Error())
 		}
 		s.cookiesRepo.InitTables()
 	}
 }
-
-

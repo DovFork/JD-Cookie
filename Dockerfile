@@ -22,7 +22,6 @@ ENV GO111MODULE "on"
 RUN cd /src \
     && apk add --no-cache --update gcc musl-dev  make \
     && rm -rf dist \
-    && go get -u github.com/gobuffalo/packr/v2/packr2 \
     && go mod tidy \
     && make
 

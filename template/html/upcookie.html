@@ -5,217 +5,220 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>首页 · 京东薅羊毛控制面板</title>
-    <script type="text/javascript" src="./assets/js/jquery.min.js"></script>
-    <script type="text/javascript" src="./assets/js/codemirror.min.js"></script>
-    <script type="text/javascript" src="./assets/js/comment.js"></script>
-    <script type="text/javascript" src="./assets/js/shell.js"></script>
-    <script type="text/javascript" src="./assets/js/sublime.js"></script>
-    <script type="text/javascript" src="./assets/js/sweetalert2.js"></script>
-    <script type="text/javascript" src="./assets/js/qrcode.min.js"></script>
-    <script type="text/javascript" src="./assets/js/prefixfree.min.js"></script>
-<!--    <script type="text/javascript" src="https://cdn.bootcss.com/clipboard.js/2.0.0/clipboard.min.js"></script>-->
+    <script type="text/javascript" src="./public/template/assets/js/jquery.min.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/codemirror.min.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/comment.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/shell.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/sublime.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/sweetalert2.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/qrcode.min.js"></script>
+    <script type="text/javascript" src="./public/template/assets/js/prefixfree.min.js"></script>
+    <!--    <script type="text/javascript" src="https://cdn.bootcss.com/clipboard.js/2.0.0/clipboard.min.js"></script>-->
 
-    <link rel="stylesheet" type="text/css" href="./assets/css/normalize.min.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/style.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/codemirror.min.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/twilight.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/dracula.css">
-    <link rel="stylesheet" type="text/css" href="./assets/css/main.css">
-    <link rel="icon" type="image/x-icon" href="https://www.jd.com/favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/normalize.min.css">
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/style.css">
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/codemirror.min.css">
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/twilight.css">
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/dracula.css">
+    <link rel="stylesheet" type="text/css" href="./public/template/assets/css/main.css">
+    <link rel="icon" type="image/x-icon" href="https://www.jd.com/favicon.ico"/>
 </head>
 <body>
-    <div class="container">
-        <div style="text-align:center;">
-            
-            </nav>
-            <header>
-                <h1 style="margin-top: 100px; color: #000000">用京东app扫码</h1>
-                <h1 style="margin-top: 10px; color: #000000">自动更新cookie</h1>
-                <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs/jd_cookie" target="_blank">scjtqs</a></h1>
-                <button
-                    id="cookietools" title="手机扫描二维码登录">点击扫码获取 Cookie</button>
-                <span style="display: none;">
+<div class="container">
+    <div style="text-align:center;">
+
+        </nav>
+        <header>
+            <h1 style="margin-top: 100px; color: #000000">用京东app扫码</h1>
+            <h1 style="margin-top: 10px; color: #000000">自动更新cookie version {{ .version }}</h1>
+            <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs/jd_cookie"
+                                                                       target="_blank">scjtqs</a></h1>
+            <
+            <button
+                    id="cookietools" title="手机扫描二维码登录">点击扫码获取 Cookie
+            </button>
+            <span style="display: none;">
                     <input type="checkbox" id="autoReplace" checked="checked">
                     <label for="autoReplace">
                         <font color="#F0EFF4" size="1">扫码后自动替换</font>
                     </label>
                 </span>
-            </header>
-            
-            
-        </div>
+        </header>
+
+
     </div>
-    <div id="qrcontainer" class="hidden">
-        <div class="qframe">
-            <div id="refresh_qrcode" class="hidden">
-                <div>
-                    <h3>二维码已失效</h3>
-                    <div class="refresh">刷新</div>
-                </div>
+</div>
+<div id="qrcontainer" class="hidden">
+    <div class="qframe">
+        <div id="refresh_qrcode" class="hidden">
+            <div>
+                <h3>二维码已失效</h3>
+                <div class="refresh">刷新</div>
             </div>
-            <div id="qrcode"></div>
-            <div class="info">请使用手机京东APP扫码</div>
-            <div class="qframe-close" title="关闭">✖</div>
         </div>
+        <div id="qrcode"></div>
+        <div class="info">请使用手机京东APP扫码</div>
+        <div class="qframe-close" title="关闭">✖</div>
     </div>
-    <script>
-        $.ajaxSetup({
-            cache: false
+</div>
+<script>
+    $.ajaxSetup({
+        cache: false
+    });
+
+    var qrcode, userCookie;
+    $(document).ready(function () {
+
+
+        // 勾选记忆
+        if (sessionStorage.getItem('autoReplaceCookie') === 'false') {
+            $('#autoReplace').prop('checked', false);
+        }
+        $('#autoReplace').on('change', function () {
+            sessionStorage.setItem('autoReplaceCookie', $(this).prop('checked'));
         });
 
-        var qrcode, userCookie;
-        $(document).ready(function () {
-            
+        qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: "sample",
+            correctLevel: QRCode.CorrectLevel.L
+        });
 
-            // 勾选记忆
-            if (sessionStorage.getItem('autoReplaceCookie') === 'false') {
-                $('#autoReplace').prop('checked', false);
+
+        function copyToClip(content, message) {
+            var aux = document.createElement("input");
+            aux.setAttribute("value", content);
+            document.body.appendChild(aux);
+            aux.select();
+            document.execCommand("copy");
+            document.body.removeChild(aux);
+        }
+
+        function autoReplace(cookie) {
+            var value = editor.getValue();
+            var ptPin = /pt_pin=[\S]+;/.exec(cookie)[0];
+            var cookieReg = new RegExp(`pt_key=[\\S]+;${ptPin}`);
+            if (cookieReg.test(value)) {
+                var newValue = value.replaceAll(cookieReg, cookie);
+                editor.setValue(newValue);
+                return true;
+            } else {
+                return false;
             }
-            $('#autoReplace').on('change', function () {
-                sessionStorage.setItem('autoReplaceCookie', $(this).prop('checked'));
-            });
-
-            qrcode = new QRCode(document.getElementById("qrcode"), {
-                text: "sample",
-                correctLevel: QRCode.CorrectLevel.L
-            });
+        }
 
 
-            function copyToClip(content, message) {
-                var aux = document.createElement("input");
-                aux.setAttribute("value", content);
-                document.body.appendChild(aux);
-                aux.select();
-                document.execCommand("copy");
-                document.body.removeChild(aux);
-            }
-
-            function autoReplace(cookie) {
-                var value = editor.getValue();
-                var ptPin = /pt_pin=[\S]+;/.exec(cookie)[0];
-                var cookieReg = new RegExp(`pt_key=[\\S]+;${ptPin}`);
-                if (cookieReg.test(value)) {
-                    var newValue = value.replaceAll(cookieReg, cookie);
-                    editor.setValue(newValue);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-
-            function checkLogin() {
-                var timeId = setInterval(() => {
-                    $.get('./cookie', function (data) {
-                        if (data.err == 0) {
-                            clearInterval(timeId);
-                            $("#qrcontainer").addClass("hidden");
-                            $("#refresh_qrcode").addClass("hidden");
-                            userCookie = data.cookie
-                            var isAutoReplace = $('#autoReplace').prop('checked');
-                            if (isAutoReplace) {
-
-
-                                $.post('./api/upsave', {
-                                    userCookie: userCookie,
-                                }, function (data) {
-                                    let icon = (data.err == 0) ? "success" : "error"
-                                    if (data.err == 0){
-                                        Swal.fire({
-                                            title: data.title,
-                                            text: data.msg,
-                                            html: '<div class="cookieCon" style="font-size:12px;">' +
-                                                userCookie + '</div>',
-                                            icon: icon,
-                                            confirmButtonText: "复制Cookie",
-                                        }).then((result) => {
-                                            copyToClip(userCookie);
-                                            window.location.reload(true);
-                                        })
-                                    }else{
-                                        Swal.fire({
-                                            title: data.title,
-                                            text: data.msg,
-                                            icon: icon
-                                        }).then((result) => {
-                                            window.location.reload(true);
-                                        })
-                                    }
-                                });
-
-
-                            } else {
-                                Swal.fire({
-                                    title: "cookie已获取",
-                                    html: '<div class="cookieCon" style="font-size:12px;">' +
-                                        userCookie + '</div>',
-                                    icon: "success",
-                                    confirmButtonText: "复制Cookie",
-                                }).then((result) => {
-                                    copyToClip(userCookie);
-                                });
-                            }
-
-                        } else if (data.err == 21) {
-                            clearInterval(timeId);
-                            $("#refresh_qrcode").removeClass("hidden");
-                        }
-                    })
-                }, 3000)
-
-            }
-
-            function get_code() {
-                $.get('./qrcode', function (data) {
+        function checkLogin() {
+            var timeId = setInterval(() => {
+                $.get('./cookie', function (data) {
                     if (data.err == 0) {
-                        $("#qrcontainer").removeClass("hidden")
-                        $("#refresh_qrcode").addClass("hidden")
-                        qrcode.clear();
-                        qrcode.makeCode(data.qrcode);
-                        checkLogin();
-                    } else {
-                        Swal.fire({
-                            text: data.msg,
-                            icon: "error"
-                        })
+                        clearInterval(timeId);
+                        $("#qrcontainer").addClass("hidden");
+                        $("#refresh_qrcode").addClass("hidden");
+                        userCookie = data.cookie
+                        var isAutoReplace = $('#autoReplace').prop('checked');
+                        if (isAutoReplace) {
+
+
+                            $.post('./api/upsave', {
+                                userCookie: userCookie,
+                            }, function (data) {
+                                let icon = (data.err == 0) ? "success" : "error"
+                                if (data.err == 0) {
+                                    Swal.fire({
+                                        title: data.title,
+                                        text: data.msg,
+                                        html: '<div class="cookieCon" style="font-size:12px;">' +
+                                            userCookie + '</div>',
+                                        icon: icon,
+                                        confirmButtonText: "复制Cookie",
+                                    }).then((result) => {
+                                        copyToClip(userCookie);
+                                        window.location.reload(true);
+                                    })
+                                } else {
+                                    Swal.fire({
+                                        title: data.title,
+                                        text: data.msg,
+                                        icon: icon
+                                    }).then((result) => {
+                                        window.location.reload(true);
+                                    })
+                                }
+                            });
+
+
+                        } else {
+                            Swal.fire({
+                                title: "cookie已获取",
+                                html: '<div class="cookieCon" style="font-size:12px;">' +
+                                    userCookie + '</div>',
+                                icon: "success",
+                                confirmButtonText: "复制Cookie",
+                            }).then((result) => {
+                                copyToClip(userCookie);
+                            });
+                        }
+
+                    } else if (data.err == 21) {
+                        clearInterval(timeId);
+                        $("#refresh_qrcode").removeClass("hidden");
                     }
-                });
-            }
+                })
+            }, 3000)
 
-            $('.refresh').click(get_code);
+        }
 
-            $('#cookietools').click(get_code);
-
-            $('.qframe-close').click(function () {
-                $("#qrcontainer").addClass("hidden");
-                $("#refresh_qrcode").addClass("hidden");
-            });
-
-            $('#save').click(function () {
-                var confContent = editor.getValue();
-                $.post('./api/save01', {
-                    content: confContent,
-                    name: "upconfig.sh"
-                }, function (data) {
-                    let icon = (data.err == 0) ? "success" : "error"
+        function get_code() {
+            $.get('./qrcode', function (data) {
+                if (data.err == 0) {
+                    $("#qrcontainer").removeClass("hidden")
+                    $("#refresh_qrcode").addClass("hidden")
+                    qrcode.clear();
+                    qrcode.makeCode(data.qrcode);
+                    checkLogin();
+                } else {
                     Swal.fire({
-                        title: data.title,
                         text: data.msg,
-                        icon: icon
-                    }).then((result) => {
-                        window.location.reload(true);
+                        icon: "error"
                     })
-                });
+                }
             });
+        }
 
-            $('#wrap').click(function () {
-                var lineWrapping = editor.getOption('lineWrapping');
-                editor.setOption('lineWrapping', !lineWrapping);
+        $('.refresh').click(get_code);
+
+        $('#cookietools').click(get_code);
+
+        $('.qframe-close').click(function () {
+            $("#qrcontainer").addClass("hidden");
+            $("#refresh_qrcode").addClass("hidden");
+        });
+
+        $('#save').click(function () {
+            var confContent = editor.getValue();
+            $.post('./api/save01', {
+                content: confContent,
+                name: "upconfig.sh"
+            }, function (data) {
+                let icon = (data.err == 0) ? "success" : "error"
+                Swal.fire({
+                    title: data.title,
+                    text: data.msg,
+                    icon: icon
+                }).then((result) => {
+                    window.location.reload(true);
+                })
             });
         });
-    </script>
+
+        $('#wrap').click(function () {
+            var lineWrapping = editor.getOption('lineWrapping');
+            editor.setOption('lineWrapping', !lineWrapping);
+        });
+    });
+</script>
 
 </body>
 
@@ -223,11 +226,11 @@
 </head>
 
 <body>
-    <!-- partial:index.partial.html -->
-    <canvas id="sakura"></canvas>
+<!-- partial:index.partial.html -->
+<canvas id="sakura"></canvas>
 
-    <!-- sakura shader -->
-    <script id="sakura_point_vsh" type="x-shader/x_vertex">
+<!-- sakura shader -->
+<script id="sakura_point_vsh" type="x-shader/x_vertex">
         uniform mat4 uProjection;
 uniform mat4 uModelview;
 uniform vec3 uResolution;
@@ -318,8 +321,9 @@ void main(void) {
     //-0.69315 = ln(0.5)
     distancefade = min(1.0, exp((uFade.x - pdist) * 0.69315 / uFade.y));
 }
+
 </script>
-    <script id="sakura_point_fsh" type="x-shader/x_fragment">
+<script id="sakura_point_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -390,9 +394,10 @@ void main(void) {
     
     gl_FragColor = vec4(col * 0.5, alpha);
 }
+
 </script>
-    <!-- effects -->
-    <script id="fx_common_vsh" type="x-shader/x_vertex">
+<!-- effects -->
+<script id="fx_common_vsh" type="x-shader/x_vertex">
         uniform vec3 uResolution;
 attribute vec2 aPosition;
 
@@ -404,8 +409,9 @@ void main(void) {
     texCoord = aPosition.xy * 0.5 + vec2(0.5, 0.5);
     screenCoord = aPosition.xy * vec2(uResolution.z, 1.0);
 }
+
 </script>
-    <script id="bg_fsh" type="x-shader/x_fragment">
+<script id="bg_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -424,8 +430,9 @@ void main(void) {
     col = mix(vec3(0.02, 0.0, 0.03), vec3(0.96, 0.98, 1.0) * 1.5, c);
     gl_FragColor = vec4(col * 0.5, 1.0);
 }
+
 </script>
-    <script id="fx_brightbuf_fsh" type="x-shader/x_fragment">
+<script id="fx_brightbuf_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -440,8 +447,9 @@ void main(void) {
     vec4 col = texture2D(uSrc, texCoord);
     gl_FragColor = vec4(col.rgb * 2.0 - vec3(0.5), 1.0);
 }
+
 </script>
-    <script id="fx_dirblur_r4_fsh" type="x-shader/x_fragment">
+<script id="fx_dirblur_r4_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -461,9 +469,10 @@ void main(void) {
     col = col + texture2D(uSrc, texCoord - (uBlurDir.xy + uBlurDir.zw) * uDelta);
     gl_FragColor = col / 5.0;
 }
+
 </script>
-    <!-- effect fragment shader template -->
-    <script id="fx_common_fsh" type="x-shader/x_fragment">
+<!-- effect fragment shader template -->
+<script id="fx_common_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -477,9 +486,10 @@ varying vec2 screenCoord;
 void main(void) {
     gl_FragColor = texture2D(uSrc, texCoord);
 }
+
 </script>
-    <!-- post processing -->
-    <script id="pp_final_vsh" type="x-shader/x_vertex">
+<!-- post processing -->
+<script id="pp_final_vsh" type="x-shader/x_vertex">
         uniform vec3 uResolution;
 attribute vec2 aPosition;
 varying vec2 texCoord;
@@ -489,8 +499,9 @@ void main(void) {
     texCoord = aPosition.xy * 0.5 + vec2(0.5, 0.5);
     screenCoord = aPosition.xy * vec2(uResolution.z, 1.0);
 }
+
 </script>
-    <script id="pp_final_fsh" type="x-shader/x_fragment">
+<script id="pp_final_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
 //precision mediump float;
 precision highp float;
@@ -511,6 +522,7 @@ void main(void) {
     gl_FragColor = vec4(col.rgb, 1.0);
     gl_FragColor.a = 1.0;
 }
+
 </script>
 
 </body>
