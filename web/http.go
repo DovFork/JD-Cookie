@@ -67,7 +67,7 @@ func (s *httpServer) Run(addr string, ct *dig.Container) {
 	s.engine.SetHTMLTemplate(templ)
 	//静态资源
 	//s.engine.Static("/assets", "./template/assets")
-	s.engine.StaticFS("/public", http.FS(f))
+	//s.engine.StaticFS("/public", http.FS(f))
 	s.engine.GET("/", func(c *gin.Context) {
 		s.GetclientIP(c)
 		var v string
@@ -77,6 +77,10 @@ func (s *httpServer) Run(addr string, ct *dig.Container) {
 		c.HTML(http.StatusOK, "upcookie.html", gin.H{
 			"version":v,
 		})
+	})
+	// 静态文件处理
+	s.engine.GET("assets/*action", func(c *gin.Context) {
+		c.FileFromFS("template/assets/"+c.Param("action"),http.FS(f))
 	})
 
 	// 路由
