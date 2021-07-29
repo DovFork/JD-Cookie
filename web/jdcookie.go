@@ -60,6 +60,8 @@ var user_agents = []string{
 
 func (s *httpServer) getUa() string {
 	//lens := len(user_agents)
+	//rand.Seed(time.Now().UnixNano())
+	////r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	//num := rand.Intn(lens)
 	//ua := user_agents[num]
 	t := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
