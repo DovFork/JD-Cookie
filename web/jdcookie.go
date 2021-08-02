@@ -58,14 +58,18 @@ var user_agents = []string{
 	"jdapp;iPhone;10.0.2;14.1;network/wifi;Mozilla/5.0 (iPhone; CPU iPhone OS 14_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148;supportJDSHWK/1",
 }
 
-func (s *httpServer) getUa() string {
+func (s *httpServer) getUa(c *gin.Context) string {
 	//lens := len(user_agents)
 	//rand.Seed(time.Now().UnixNano())
 	////r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	//num := rand.Intn(lens)
 	//ua := user_agents[num]
-	t := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
-	ua := fmt.Sprintf("jdapp;android;10.0.5;11;%s-%s;network/wifi;model/M2102K1C;osVer/30;appBuild/88681;partner/lc001;eufv/1;jdSupportDarkMode/0;Mozilla/5.0 (Linux; Android 11; M2102K1C Build/RKQ1.201112.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045534 Mobile Safari/537.36", t, t)
+	ua,err:=s.GetUa(c)
+	if err != nil {
+		t := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
+		ua = fmt.Sprintf("jdapp;android;10.0.5;11;%s-%s;network/wifi;model/M2102K1C;osVer/30;appBuild/88681;partner/lc001;eufv/1;jdSupportDarkMode/0;Mozilla/5.0 (Linux; Android 11; M2102K1C Build/RKQ1.201112.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045534 Mobile Safari/537.36", t, t)
+		s.SaveUa(c,ua)
+	}
 	return ua
 }
 
@@ -142,7 +146,7 @@ func (s *httpServer) step1(c *gin.Context) (*cookiejar.Jar, error) {
 	req.Header.Add("Accept-Language", "zh-cn")
 	req.Header.Add("Referer", "https://plogin.m.jd.com/cgi-bin/mm/new_login_entrance?lang=chs&appid=300&returnurl=https://wq.jd.com/passport/LoginRedirect?state="+timeStamp+"&returnurl=https://home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport")
 	//req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36")
-	req.Header.Add("User-Agent", s.getUa())
+	req.Header.Add("User-Agent", s.getUa(c))
 	req.Header.Add("Host", "plogin.m.jd.com")
 	req.Header.Set("X-Forwarded-For", ip)
 	req.Header.Set("Proxy-Client-IP", ip)
@@ -200,7 +204,7 @@ func (s *httpServer) setp2(c *gin.Context) (string, error) {
 			"Cookie":       token.Cookies,
 			"Referer":      "https://plogin.m.jd.com/login/login?appid=300&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=" + timeStamp + "&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport",
 			//"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
-			"User-Agent":         s.getUa(),
+			"User-Agent":         s.getUa(c),
 			"X-Forwarded-For":    ip,
 			"Proxy-Client-IP":    ip,
 			"WL-Proxy-Client-IP": ip,
@@ -293,7 +297,7 @@ func (s *httpServer) checkLogin(c *gin.Context, jar *cookiejar.Jar) (string, err
 			"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
 			"Accept":       "application/json, text/plain, */*",
 			//"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
-			"User-Agent":         s.getUa(),
+			"User-Agent":         s.getUa(c),
 			"X-Forwarded-For":    ip,
 			"Proxy-Client-IP":    ip,
 			"WL-Proxy-Client-IP": ip,

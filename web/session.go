@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/vmihailenco/msgpack"
@@ -111,4 +112,18 @@ func (s *httpServer) updateToken(c *gin.Context, token *Token) (*Token, error) {
 func (s *httpServer) cleanSession(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
+}
+
+func (s *httpServer) SaveUa(c *gin.Context, ua string) error {
+	session := sessions.Default(c)
+	session.Set("ua",ua)
+	return session.Save()
+}
+
+func (s *httpServer) GetUa(c *gin.Context) (string,error)  {
+	session := sessions.Default(c)
+	if session.Get("ua") != nil {
+		return session.Get("ua").(string),nil
+	}
+	return "",errors.New("empty ua")
 }

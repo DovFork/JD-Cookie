@@ -1,5 +1,5 @@
 BUILD=`date +%FT%T%z`
-VER=v3.0.3
+VER=v3.0.4
 
 LDFLAGS=-ldflags " -s -X main.Build=${BUILD} -X main.Version=${Version}"
 
