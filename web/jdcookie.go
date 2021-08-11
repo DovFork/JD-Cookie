@@ -64,12 +64,12 @@ func (s *httpServer) getUa(c *gin.Context) string {
 	////r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	//num := rand.Intn(lens)
 	//ua := user_agents[num]
-	ua,err:=s.GetUa(c)
+	ua, err := s.GetUa(c)
 	if err != nil {
 		t := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
 		//ua = fmt.Sprintf("jdapp;android;10.0.5;11;%s-%s;network/wifi;model/M2102K1C;osVer/30;appBuild/88681;partner/lc001;eufv/1;jdSupportDarkMode/0;Mozilla/5.0 (Linux; Android 11; M2102K1C Build/RKQ1.201112.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045534 Mobile Safari/537.36", t, t)
 		ua = fmt.Sprintf("Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SP-engine/2.14.0 main/1.0 baiduboxapp/11.18.0.16 (Baidu; P2 13.3.1) NABar/0.0 TM/%s", t)
-		s.SaveUa(c,ua)
+		s.SaveUa(c, ua)
 	}
 	return ua
 }
@@ -100,8 +100,6 @@ func (s *httpServer) getQrcode(c *gin.Context) {
 		"qrcode": qrurl,
 	})
 }
-
-
 
 func (s *httpServer) praseSetCookies(c *gin.Context, rsp string, cookie *cookiejar.Jar) {
 	json := gjson.Parse(rsp)
@@ -273,7 +271,16 @@ func (s *httpServer) checkLogin(c *gin.Context, jar *cookiejar.Jar) (string, err
 	if token.Cookies == "" {
 		return "", errors.New("empty cookies")
 	}
-	//jar := s.getCookieJar(c)
+	res, err := s.checklogin_1(token, jar, ip, s.getUa(c))
+	s.updateCookieJar(c, jar)
+	if err != nil {
+		return "", err
+	}
+	//log.Warnf("checkLogin res=%s",res)
+	return res, nil
+}
+
+func (s httpServer) checklogin_1(token *Token, jar *cookiejar.Jar, ip string, ua string) (string, error) {
 	timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
 	getUrl := "https://plogin.m.jd.com/cgi-bin/m/tmauthchecktoken?&token=" + token.Token + "&ou_state=0&okl_token=" + token.Okl_token
 	client := &http.Client{
@@ -294,13 +301,12 @@ func (s *httpServer) checkLogin(c *gin.Context, jar *cookiejar.Jar) (string, err
 		).
 		BindBody(&res).
 		SetHeader(gout.H{
-			"Referer":      "https://plogin.m.jd.com/login/login?appid=300&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=" + timeStamp + "&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport",
-			"Cookie":       token.Cookies,
-			"Connection":   "Keep-Alive",
-			"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
-			"Accept":       "application/json, text/plain, */*",
-			//"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
-			"User-Agent":         s.getUa(c),
+			"Referer":            "https://plogin.m.jd.com/login/login?appid=300&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=" + timeStamp + "&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport",
+			"Cookie":             token.Cookies,
+			"Connection":         "Keep-Alive",
+			"Content-Type":       "application/x-www-form-urlencoded; Charset=UTF-8",
+			"Accept":             "application/json, text/plain, */*",
+			"User-Agent":         ua,
 			"X-Forwarded-For":    ip,
 			"Proxy-Client-IP":    ip,
 			"WL-Proxy-Client-IP": ip,
@@ -310,18 +316,19 @@ func (s *httpServer) checkLogin(c *gin.Context, jar *cookiejar.Jar) (string, err
 		F().Retry().Attempt(5).
 		WaitTime(time.Millisecond * 500).MaxWaitTime(time.Second * 5).
 		Do()
-	s.updateCookieJar(c, jar)
-	if err != nil {
-		return "", err
-	}
-	//log.Warnf("checkLogin res=%s",res)
-	return res, nil
+	return res, err
 }
 
 // 解析用户的cookie
 func (s *httpServer) getJdCookie(resp string, cookie *cookiejar.Jar, c *gin.Context) string {
-	u, _ := url.Parse("https://plogin.m.jd.com")
 	token := s.getToken(c)
+	tk := s.getJdCookie_1(token, cookie)
+	s.updateToken(c, tk)
+	return tk.UserCookie
+}
+
+func (s *httpServer) getJdCookie_1(token *Token, cookie *cookiejar.Jar) *Token {
+	u, _ := url.Parse("https://plogin.m.jd.com")
 	var TrackerID, pt_key, pt_pin, pt_token, pwdt_id, s_key, s_pin = "", "", "", "", "", "", ""
 	for _, v := range cookie.Cookies(u) {
 		if v.Name == "TrackerID" {
@@ -350,11 +357,10 @@ func (s *httpServer) getJdCookie(resp string, cookie *cookiejar.Jar, c *gin.Cont
 	token.UserCookie = "pt_key=" + pt_key + ";pt_pin=" + pt_pin + ";"
 	token.PtPin = pt_pin
 	token.PtKey = pt_key
-	s.updateToken(c, token)
 	log.Info("############  登录成功，获取到 Cookie  #############")
 	log.Infof("Cookie1=%s", token.UserCookie)
 	log.Info("####################################################")
-	return token.UserCookie
+	return token
 }
 
 func (s *httpServer) upsave(c *gin.Context) {
@@ -428,7 +434,6 @@ func (s *httpServer) upsave(c *gin.Context) {
 	})
 }
 
-
 // 获取二维码
 func (s *httpServer) getQrcode_jumplogin(c *gin.Context) {
 	s.GetclientIP(c)
@@ -450,14 +455,15 @@ func (s *httpServer) getQrcode_jumplogin(c *gin.Context) {
 		return
 	}
 	log.Warnf("get qrcode url = %s", qrurl)
-	jpl:=jumpLogin{
+	jpl := jumpLogin{
 		CookieJar: s.getCookieJar(c),
-		Tk: s.getToken(c),
+		Tk:        s.getToken(c),
+		Ip:        c.ClientIP(),
 	}
-	ckChan<-jpl
+	ckChan <- jpl
 	c.JSON(200, MSG{
 		"err":    0,
 		"qrcode": qrurl,
-		"token":s.getToken(c).Token,
+		"token":  s.getToken(c).Token,
 	})
 }

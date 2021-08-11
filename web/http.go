@@ -1,7 +1,6 @@
 package web
 
 import (
-	"crypto/tls"
 	"embed"
 	"fmt"
 	"github.com/gin-contrib/sessions"
@@ -16,7 +15,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -33,6 +31,7 @@ type httpServer struct {
 type jumpLogin struct {
 	Tk        *Token
 	CookieJar *cookiejar.Jar
+	Ip        string
 }
 
 var HTTPServer = &httpServer{}
@@ -153,81 +152,19 @@ func (s *httpServer) initdb() {
 //直接唤起 京东 客户端 后台获取cookie
 func (s *httpServer) backgroundRun() {
 	tk := <-ckChan
-	//jar := s.getCookieJar(c)
-	timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
-	getUrl := "https://plogin.m.jd.com/cgi-bin/m/tmauthchecktoken?&token=" + tk.Tk.Token + "&ou_state=0&okl_token=" + tk.Tk.Okl_token
-	client := &http.Client{
-		Jar:       tk.CookieJar,
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	}
 	var res string
+	var err error
 	tm := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
 	ua := fmt.Sprintf("Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SP-engine/2.14.0 main/1.0 baiduboxapp/11.18.0.16 (Baidu; P2 13.3.1) NABar/0.0 TM/%s", tm)
 	for i := 1; i <= 100; i++ {
-		err := gout.New(client).
-			POST(getUrl).
-			//Debug(true).
-			SetWWWForm(
-				gout.H{
-					"lang":      "chs",
-					"appid":     300,
-					"returnurl": "https://wqlogin2.jd.com/passport/LoginRedirect?state=1100399130787&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action",
-					"source":    "wq_passport",
-				},
-			).
-			BindBody(&res).
-			SetHeader(gout.H{
-				"Referer":      "https://plogin.m.jd.com/login/login?appid=300&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=" + timeStamp + "&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport",
-				"Cookie":       tk.Tk.Cookies,
-				"Connection":   "Keep-Alive",
-				"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
-				"Accept":       "application/json, text/plain, */*",
-				//"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36",
-				"User-Agent": ua,
-			}).
-			SetTimeout(timeout).
-			F().Retry().Attempt(5).
-			WaitTime(time.Millisecond * 500).MaxWaitTime(time.Second * 5).
-			Do()
+		res, err = s.checklogin_1(tk.Tk, tk.CookieJar, tk.Ip, ua)
 		if err != nil {
 			return
 		}
 		checkJson := gjson.Parse(res)
 		if checkJson.Get("errcode").Int() == 0 {
 			//获取cookie
-			u, _ := url.Parse("https://plogin.m.jd.com")
-			token := tk.Tk
-			var TrackerID, pt_key, pt_pin, pt_token, pwdt_id, s_key, s_pin = "", "", "", "", "", "", ""
-			for _, v := range tk.CookieJar.Cookies(u) {
-				if v.Name == "TrackerID" {
-					TrackerID = v.Value
-				}
-				if v.Name == "pt_key" {
-					pt_key = v.Value
-				}
-				if v.Name == "pt_pin" {
-					pt_pin = v.Value
-				}
-				if v.Name == "pt_token" {
-					pt_token = v.Value
-				}
-				if v.Name == "pwdt_id" {
-					pwdt_id = v.Value
-				}
-				if v.Name == "s_key" {
-					s_key = v.Value
-				}
-				if v.Name == "s_pin" {
-					s_pin = v.Value
-				}
-			}
-			token.Cookies = "TrackerID=" + TrackerID + "; pt_key=" + pt_key + "; pt_pin=" + pt_pin + "; pt_token=" + pt_token + "; pwdt_id=" + pwdt_id + "; s_key=" + s_key + "; s_pin=" + s_pin + "; wq_skey="
-			token.UserCookie = "pt_key=" + pt_key + ";pt_pin=" + pt_pin + ";"
-			token.PtPin = pt_pin
-			token.PtKey = pt_key
-			log.Info("############  登录成功，获取到 Cookie  #############")
-			log.Infof("Cookie1=%s", token.UserCookie)
-			log.Info("####################################################")
+			token := s.getJdCookie_1(tk.Tk, tk.CookieJar)
 			//写db
 			if s.Conf.DbConf.DbEnable {
 				_, err := s.cookiesRepo.UpdateCookie(token.PtPin, token.PtKey, token.UserCookie)
