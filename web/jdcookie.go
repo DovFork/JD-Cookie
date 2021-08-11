@@ -101,6 +101,8 @@ func (s *httpServer) getQrcode(c *gin.Context) {
 	})
 }
 
+
+
 func (s *httpServer) praseSetCookies(c *gin.Context, rsp string, cookie *cookiejar.Jar) {
 	json := gjson.Parse(rsp)
 	token := s.getToken(c)
@@ -423,5 +425,39 @@ func (s *httpServer) upsave(c *gin.Context) {
 		"err":   0,
 		"title": "提取cookie成功",
 		"msg":   "cookie= " + token.UserCookie,
+	})
+}
+
+
+// 获取二维码
+func (s *httpServer) getQrcode_jumplogin(c *gin.Context) {
+	s.GetclientIP(c)
+	log.Warn("start get qrcode")
+	_, err := s.step1(c)
+	if err != nil {
+		c.JSON(200, MSG{
+			"err": 1,
+			"msg": err,
+		})
+		return
+	}
+	qrurl, err := s.setp2(c)
+	if err != nil {
+		c.JSON(200, MSG{
+			"err": 1,
+			"msg": err,
+		})
+		return
+	}
+	log.Warnf("get qrcode url = %s", qrurl)
+	jpl:=jumpLogin{
+		CookieJar: s.getCookieJar(c),
+		Tk: s.getToken(c),
+	}
+	ckChan<-jpl
+	c.JSON(200, MSG{
+		"err":    0,
+		"qrcode": qrurl,
+		"token":s.getToken(c).Token,
 	})
 }

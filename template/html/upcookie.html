@@ -38,6 +38,8 @@
             <button
                     id="cookietools" title="手机扫描二维码登录">点击扫码获取 Cookie
             </button>
+
+            <button id="jumplogin" title="手机端跳转app登录">跳转到京东 App 登录</button>
             <span style="display: none;">
                     <input type="checkbox" id="autoReplace" checked="checked">
                     <label for="autoReplace">
@@ -189,6 +191,16 @@
         $('.refresh').click(get_code);
 
         $('#cookietools').click(get_code);
+        var token = undefined
+        $('#jumplogin').click(function () {
+            $.get('./qrcode_jumplogin', function (data) {
+                token = data.token;
+                const href = 'openapp.jdmobile://virtual/ad?params={"category":"jump","des":"ThirdPartyLogin","action":"to","onekeylogin":"return","url":"https://plogin.m.jd.com/cgi-bin/m/tmauth?appid=300&client_type=m&token=' + token + '","authlogin_returnurl":"weixin://www.baidu.com","browserlogin_fromurl":"' + window.location.host + '"}';
+                console.log(href)
+                window.location.href = href;
+            });
+
+        });
 
         $('.qframe-close').click(function () {
             $("#qrcontainer").addClass("hidden");
@@ -322,6 +334,9 @@ void main(void) {
 }
 
 
+
+
+
 </script>
 <script id="sakura_point_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
@@ -396,6 +411,9 @@ void main(void) {
 }
 
 
+
+
+
 </script>
 <!-- effects -->
 <script id="fx_common_vsh" type="x-shader/x_vertex">
@@ -410,6 +428,9 @@ void main(void) {
     texCoord = aPosition.xy * 0.5 + vec2(0.5, 0.5);
     screenCoord = aPosition.xy * vec2(uResolution.z, 1.0);
 }
+
+
+
 
 
 </script>
@@ -434,6 +455,9 @@ void main(void) {
 }
 
 
+
+
+
 </script>
 <script id="fx_brightbuf_fsh" type="x-shader/x_fragment">
         #ifdef GL_ES
@@ -450,6 +474,9 @@ void main(void) {
     vec4 col = texture2D(uSrc, texCoord);
     gl_FragColor = vec4(col.rgb * 2.0 - vec3(0.5), 1.0);
 }
+
+
+
 
 
 </script>
@@ -475,6 +502,9 @@ void main(void) {
 }
 
 
+
+
+
 </script>
 <!-- effect fragment shader template -->
 <script id="fx_common_fsh" type="x-shader/x_fragment">
@@ -493,6 +523,9 @@ void main(void) {
 }
 
 
+
+
+
 </script>
 <!-- post processing -->
 <script id="pp_final_vsh" type="x-shader/x_vertex">
@@ -505,6 +538,9 @@ void main(void) {
     texCoord = aPosition.xy * 0.5 + vec2(0.5, 0.5);
     screenCoord = aPosition.xy * vec2(uResolution.z, 1.0);
 }
+
+
+
 
 
 </script>
