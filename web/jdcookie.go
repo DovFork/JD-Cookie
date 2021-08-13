@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/guonaihong/gout"
 	log "github.com/sirupsen/logrus"
@@ -437,6 +438,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 // 获取二维码
 func (s *httpServer) getQrcode_jumplogin(c *gin.Context) {
 	s.GetclientIP(c)
+	session := sessions.Default(c)
 	log.Warn("start get qrcode")
 	_, err := s.step1(c)
 	if err != nil {
@@ -455,15 +457,52 @@ func (s *httpServer) getQrcode_jumplogin(c *gin.Context) {
 		return
 	}
 	log.Warnf("get qrcode url = %s", qrurl)
+	token := s.getToken(c)
 	jpl := jumpLogin{
 		CookieJar: s.getCookieJar(c),
-		Tk:        s.getToken(c),
+		Tk:        token,
 		Ip:        c.ClientIP(),
+		Ctx:       c,
+		Session:   session,
 	}
 	ckChan <- jpl
+	session.Set(cache_key_cookie+"token", []byte(token.Token))
+	session.Save()
 	c.JSON(200, MSG{
 		"err":    0,
 		"qrcode": qrurl,
-		"token":  s.getToken(c).Token,
+		"token":  token.Token,
+	})
+}
+
+//jd app登录通过token查cookie
+func (s *httpServer) get_cookie_by_token(c *gin.Context) {
+	session := sessions.Default(c)
+	tokenByte := session.Get(cache_key_cookie + "token")
+	if tokenByte == nil {
+		c.JSON(200, MSG{
+			"err":   404,
+			"title": "提取cookie失败",
+			"msg":   "请重新提取",
+		})
+		return
+	}
+	token := string(tokenByte.([]byte))
+	cookie, err := cache.Get(cache_key_cookie + token)
+	if err != nil {
+		c.JSON(200, MSG{
+			"err":   21,
+			"title": "提取cookie失败",
+			"msg":   "请重新提取，或者再次查询",
+		})
+		return
+	}
+	cache.Remove(cache_key_cookie + token)
+	session.Clear()
+	c.JSON(200, MSG{
+		"err":    0,
+		"title":  "提取cookie成功",
+		"msg":    "cookie:" + cookie.(string),
+		"cookie": cookie,
 	})
 }

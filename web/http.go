@@ -3,6 +3,7 @@ package web
 import (
 	"embed"
 	"fmt"
+	"github.com/bluele/gcache"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
@@ -32,11 +33,17 @@ type jumpLogin struct {
 	Tk        *Token
 	CookieJar *cookiejar.Jar
 	Ip        string
+	Ctx       *gin.Context
+	Session   sessions.Session
 }
 
 var HTTPServer = &httpServer{}
 
 var ckChan = make(chan jumpLogin, 10)
+
+var cache = gcache.New(20).LRU().Build()
+
+const cache_key_cookie = "CACHE_FOR_COOKIE_TOKEN_"
 
 func (s *httpServer) Run(addr string, ct *dig.Container) {
 	s.ct = ct
@@ -83,6 +90,7 @@ func (s *httpServer) Run(addr string, ct *dig.Container) {
 	//s.engine.StaticFS("/public", http.FS(f))
 	s.engine.GET("/", func(c *gin.Context) {
 		s.GetclientIP(c)
+		sessions.Default(c)
 		var v string
 		ct.Invoke(func(version string) {
 			v = version
@@ -100,6 +108,7 @@ func (s *httpServer) Run(addr string, ct *dig.Container) {
 	// 获取二维码
 	s.engine.GET("/qrcode", s.getQrcode)
 	s.engine.GET("/qrcode_jumplogin", s.getQrcode_jumplogin)
+	s.engine.GET("/get_cookie_by_token",s.get_cookie_by_token)
 	// 获取返回的cookie信息
 	s.engine.GET("/cookie", s.getCookie)
 	// 获取各种配置文件api
@@ -214,6 +223,7 @@ func (s *httpServer) backgroundRun() {
 					log.Infof("errcode=%d,title=%s,msg=%s", errcode, title, msg)
 				}
 			}
+			cache.SetWithExpire(cache_key_cookie+token.Token, token.UserCookie, time.Minute*10)
 			break
 		} else {
 			log.Errorf("获取cookie失败")
