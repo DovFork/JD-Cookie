@@ -167,16 +167,16 @@ func (s *httpServer) backgroundRun() {
 }
 
 func (s *httpServer) background_check_login(tk jumpLogin)  {
-	var res string
+	var result string
 	var err error
 	tm := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
 	ua := fmt.Sprintf("Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 SP-engine/2.14.0 main/1.0 baiduboxapp/11.18.0.16 (Baidu; P2 13.3.1) NABar/0.0 TM/%s", tm)
 	for i := 1; i <= 100; i++ {
-		res, err = s.checklogin_1(tk.Tk, tk.CookieJar, tk.Ip, ua)
+		result, err = s.checklogin_1(tk.Tk, tk.CookieJar, tk.Ip, ua)
 		if err != nil {
 			return
 		}
-		checkJson := gjson.Parse(res)
+		checkJson := gjson.Parse(result)
 		if checkJson.Get("errcode").Int() == 0 {
 			//获取cookie
 			token := s.getJdCookie_1(tk.Tk, tk.CookieJar)
