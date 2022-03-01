@@ -32,7 +32,7 @@ type SmsSession struct {
 
 // toQuickCookie 转换成quick接口的cookie
 func (s *SmsSession) toQuickCookie() string {
-	return fmt.Sprintf("guid=%s;lsid=%s;gsalt=%s;rsa_modulus=%s;", s.Guid, s.Lsid, s.Gsalt, s.RsaModulus)
+	return fmt.Sprintf("guid=%s; lsid=%s; gsalt=%s; rsa_modulus=%s; ", s.Guid, s.Lsid, s.Gsalt, s.RsaModulus)
 }
 
 func (s *SmsSession) toJson() []byte {
@@ -90,6 +90,7 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("semdSms r1=%s", string(r))
 	g1 := gjson.ParseBytes(r).Get("data")
 	ck := SmsSession{
 		Guid:       g1.Get("guid").String(),
@@ -131,6 +132,7 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 		defer res2.Body.Close()
 	}
 	r2, err := io.ReadAll(res2.Body)
+	log.Printf("semdSms r2=%s", string(r))
 	if err != nil {
 		return nil, err
 	}
@@ -138,10 +140,25 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 		return nil, errors.New("接口访问失败")
 	}
 	g2 := gjson.ParseBytes(r2)
-	log.Println("code code response :", string(r2))
-	ck.ErrCode = g2.Get("data.err_code").Int()
-	ck.ErrMsg = g2.Get("data.err_msg").String()
+	// log.Println("code code response :", string(r2))
+	ck.ErrCode = g2.Get("err_code").Int()
+	ck.ErrMsg = g2.Get("err_msg").String()
+	if g2.Get("data.rsa_modulus").Exists() {
+		ck.RsaModulus = g2.Get("data.rsa_modulus").String()
+	}
+	if g2.Get("data.gsalt").Exists() {
+		ck.Gsalt = g2.Get("data.gsalt").String()
+	}
+	if g2.Get("data.lsid").Exists() {
+		ck.Lsid = g2.Get("data.lsid").String()
+	}
+	if g2.Get("data.guid").Exists() {
+		ck.Guid = g2.Get("data.guid").String()
+	}
 	// _ = s.updateCookieJar(c, jar)
+	if ck.ErrCode != 0 {
+		return nil, errors.New(ck.ErrMsg)
+	}
 	session.Set("SmsSession", ck.toJson())
 	_ = session.Save()
 	return &ck, nil
@@ -175,7 +192,7 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	dataVal.Add("client_ver", version)
 	dataVal.Add("gsign", gsign)
 	dataVal.Add("smscode", code)
-	dataVal.Add("appid",strconv.Itoa(appid))
+	dataVal.Add("appid", strconv.Itoa(appid))
 	dataVal.Add("mobile", smsSession.Phone)
 	dataVal.Add("cmd", strconv.Itoa(cmd))
 	dataVal.Add("sub_cmd", strconv.Itoa(subCmd))
@@ -196,6 +213,7 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	req.Header.Add("Accept-Encoding", "")
 	req.Header.Add("Cookie", smsSession.toQuickCookie())
+	log.Printf("cookie=%s", smsSession.toQuickCookie())
 	res, err := client.Do(req)
 	if res != nil {
 		defer res.Body.Close()
@@ -206,6 +224,9 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	r, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
+	}
+	if !gjson.ValidBytes(r) {
+		return nil, errors.New("接口访问失败")
 	}
 	g := gjson.ParseBytes(r)
 	log.Println("check code response :", string(r))
@@ -222,7 +243,7 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	log.Info("############  登录成功，获取到 Cookie  #############")
 	log.Infof("Cookie1=%s", token.UserCookie)
 	log.Info("####################################################")
-	session.Clear()
+	s.cleanSession(c)
 	return token, nil
 }
 
@@ -272,6 +293,13 @@ func (s *httpServer) checkSmsCode(ctx *gin.Context) {
 			"msg":   "请输入手机验证码",
 		})
 		return
+	}
+	if !regexp.MustCompile(`^\d{6}$`).MatchString(code) {
+		ctx.JSON(http.StatusOK, MSG{
+			"err":   400,
+			"title": "参数错误",
+			"msg":   "请输入6位验证码",
+		})
 	}
 	tk, err := s.checkCode(ctx)
 	if err != nil {

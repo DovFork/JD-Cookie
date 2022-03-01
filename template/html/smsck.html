@@ -29,20 +29,17 @@
 <div class="container">
     <div style="text-align:center;">
 
-        </nav>
         <header>
             <h1 style="margin-top: 100px; color: #000000">验证登录jd获取cookie</h1>
             <h1 style="margin-top: 10px; color: #000000">自动更新cookie version {{ .version }}</h1>
-            <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs/jd_cookie"
-                                                                       target="_blank">scjtqs</a></h1>
+            <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs/jd_cookie" target="_blank">scjtqs</a></h1>
 
-            <form>
-                <input type="text" name="phone" id="phone" value="" placeholder="输入你的手机号 eg: 136xxx">
-                <button id="getcode" title="通过手机号获取验证码">获取验证码</button>
-                <input type="text" name="code" id="code" value="" placeholder="输入你手机收到的验证码">
-                <button id="checkcode" title="校验验证码">校验验证码</button>
-            </form>
-
+            <div class="sms-login">
+                <input type="text" maxlength="11" autofocus="true"  name="phone" id="phone" value="" placeholder="输入你的手机号 eg: 136xxx">
+                <button id="getcode" class="swal2-confirm swal2-styled send-sms-btn" title="通过手机号获取验证码">获取验证码</button>
+                <input type="text" name="code" id="code" maxlength="6" placeholder="6位验证码" value="" placeholder="输入你手机收到的验证码">
+                <button id="checkcode" class="swal2-confirm swal2-styled send-sms-btn" title="校验验证码">校验验证码</button>
+            </div>
             <span style="display: none;">
                     <input type="checkbox" id="autoReplace" checked="checked">
                     <label for="autoReplace">
@@ -137,7 +134,7 @@
                         icon: "success"
                     }).then((result) => {
                         console.log(data)
-                        window.location.reload(false);
+                        // window.location.reload(false);
                     })
                 } else {
                     Swal.fire({
@@ -169,7 +166,7 @@
                                     text: data.msg,
                                     html: '<div class="cookieCon" style="font-size:12px;">' +
                                         userCookie + '</div>',
-                                    icon: icon,
+                                    icon: "success",
                                     confirmButtonText: "复制Cookie",
                                 }).then((result) => {
                                     copyToClip(userCookie);
@@ -179,7 +176,7 @@
                                 Swal.fire({
                                     title: data.title,
                                     text: data.msg,
-                                    icon: icon
+                                    icon: "error"
                                 }).then((result) => {
                                     window.location.reload(true);
                                 })
@@ -200,7 +197,7 @@
                     Swal.fire({
                         title: data.title,
                         text: data.msg,
-                        icon: icon
+                        icon: "error"
                     }).then((result) => {
                         window.location.reload(true);
                     })
