@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/guonaihong/gout"
 	"github.com/scjtqs/jd_cookie/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -32,7 +33,7 @@ type SmsSession struct {
 
 // toQuickCookie 转换成quick接口的cookie
 func (s *SmsSession) toQuickCookie() string {
-	return fmt.Sprintf("guid=%s; lsid=%s; gsalt=%s; rsa_modulus=%s; ", s.Guid, s.Lsid, s.Gsalt, s.RsaModulus)
+	return fmt.Sprintf("guid=%s;lsid=%s;gsalt=%s;rsa_modulus=%s;", s.Guid, s.Lsid, s.Gsalt, s.RsaModulus)
 }
 
 func (s *SmsSession) toJson() []byte {
@@ -53,9 +54,9 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 		gsalt       = "sb2cwlYyaCSN1KUv5RHG3tmqxfEb8NKN"
 	)
 	phone := c.Query("phone")
-	jar := s.getCookieJar(c)
+	// jar := s.getCookieJar(c)
 	client := &http.Client{
-		Jar:       jar,
+		// Jar:       jar,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		Timeout:   time.Second * 10,
 	}
@@ -147,7 +148,7 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 	// log.Println("code code response :", g2.Raw)
 	ck.ErrCode = g2.Get("err_code").Int()
 	ck.ErrMsg = g2.Get("err_msg").String()
-	_ = s.updateCookieJar(c, jar)
+	// _ = s.updateCookieJar(c, jar)
 	if ck.ErrCode != 0 {
 		return nil, errors.New(ck.ErrMsg)
 	}
@@ -179,46 +180,42 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 		subCmd      = 3
 		gsign       = util.Md5(strconv.Itoa(appid) + version + strconv.FormatInt(timestamp, 10) + strconv.Itoa(cmd) + strconv.Itoa(subCmd) + smsSession.Gsalt)
 	)
-	dataVal := url.Values{}
-	dataVal.Add("country_code", strconv.Itoa(countryCode))
-	dataVal.Add("client_ver", version)
-	dataVal.Add("gsign", gsign)
-	dataVal.Add("smscode", code)
-	dataVal.Add("appid", strconv.Itoa(appid))
-	dataVal.Add("mobile", smsSession.Phone)
-	dataVal.Add("cmd", strconv.Itoa(cmd))
-	dataVal.Add("sub_cmd", strconv.Itoa(subCmd))
-	dataVal.Add("gversion", version)
-	dataVal.Add("ts", strconv.FormatInt(timestamp, 10))
-	jar := s.getCookieJar(c)
 	client := &http.Client{
-		Jar:       jar,
+		// Jar:       jar,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		Timeout:   time.Second * 10,
 	}
-	log.Printf("post params : %s", dataVal.Encode())
-	req, err := http.NewRequest("POST", "https://qapplogin.m.jd.com/cgi-bin/qapp/quick", strings.NewReader(dataVal.Encode()))
+	// log.Printf("Cookie=%s", smsSession.toQuickCookie())
+	var res string
+	err = gout.New(client).
+		Debug(true).
+		POST("https://qapplogin.m.jd.com/cgi-bin/qapp/quick").
+		SetWWWForm(gout.H{
+			"country_code": countryCode,
+			"client_ver":   version,
+			"gsign":        gsign,
+			"smscode":      code,
+			"appid":        appid,
+			"mobile":       smsSession.Phone,
+			"cmd":          cmd,
+			"sub_cmd":      subCmd,
+			"qversion":     version,
+			"ts":           timestamp,
+		}).
+		BindBody(&res).
+		SetHeader(gout.H{
+			"Connection":      "Keep-Alive",
+			"Content-Type":    "application/x-www-form-urlencoded; charset=utf-8",
+			"Accept":          "application/json, text/plain, */*",
+			"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+			"User-Agent":      "Mozilla/5.0 (Linux; Android 10; V1838T Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/98.0.4758.87 Mobile Safari/537.36 hap/1.9/vivo com.vivo.hybrid/1.9.6.302 com.jd.crplandroidhap/1.0.3 ({packageName:com.vivo.hybrid,type:deeplink,extra:{}})",
+			"Cookie":          smsSession.toQuickCookie(),
+		}).
+		Do()
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; Android 10; V1838T Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/98.0.4758.87 Mobile Safari/537.36 hap/1.9/vivo com.vivo.hybrid/1.9.6.302 com.jd.crplandroidhap/1.0.3 ({packageName:com.vivo.hybrid,type:deeplink,extra:{}})")
-	req.Header.Add("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-	req.Header.Add("Accept-Encoding", "")
-	req.Header.Add("Cookie", smsSession.toQuickCookie())
-	log.Printf("cookie=%s", smsSession.toQuickCookie())
-	res, err := client.Do(req)
-	if res != nil {
-		defer res.Body.Close()
-	}
-	if err != nil {
-		return nil, err
-	}
-	r, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	g := gjson.ParseBytes(r)
+	g := gjson.Parse(res)
 	log.Println("check code response :", g.Raw)
 	if !g.Get("err_code").Exists() {
 		return nil, errors.New("接口访问失败")
