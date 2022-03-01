@@ -30,7 +30,7 @@
     <div style="text-align:center;">
 
         <header>
-            <h1 style="margin-top: 100px; color: #000000">验证登录jd获取cookie</h1>
+            <h1 style="margin-top: 100px; color: #000000">验证码登录jd获取cookie</h1>
             <h1 style="margin-top: 10px; color: #000000">自动更新cookie version {{ .version }}</h1>
             <h1 style="margin-top: 10px; color: #000000">support by <a href="https://github.com/scjtqs2/jd_cookie" target="_blank">scjtqs</a></h1>
 
@@ -164,8 +164,8 @@
                                 Swal.fire({
                                     title: data.title,
                                     text: data.msg,
-                                    html: '<div class="cookieCon" style="font-size:12px;">' +
-                                        userCookie + '</div>',
+                                    // html: '<div class="cookieCon" style="font-size:12px;">' +
+                                    //     userCookie + '</div>',
                                     icon: "success",
                                     confirmButtonText: "复制Cookie",
                                 }).then((result) => {
