@@ -53,9 +53,9 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 		gsalt       = "sb2cwlYyaCSN1KUv5RHG3tmqxfEb8NKN"
 	)
 	phone := c.Query("phone")
-	// jar := s.getCookieJar(c)
+	jar := s.getCookieJar(c)
 	client := &http.Client{
-		// Jar:       jar,
+		Jar:       jar,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		Timeout:   time.Second * 10,
 	}
@@ -66,10 +66,10 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 	dataVal1.Add("appid", strconv.Itoa(appid))
 	dataVal1.Add("return_page", "https%3A%2F%2Fcrpl.jd.com%2Fn%2Fmine%3FpartnerId%3DWBTF0KYY%26ADTAG%3Dkyy_mrqd%26token%3D")
 	dataVal1.Add("cmd", strconv.Itoa(cmd))
-	dataVal1.Add("sdk_ver", "1.0.0")
+	dataVal1.Add("sdk_ver", version)
 	dataVal1.Add("sub_cmd", strconv.Itoa(subCmd))
 	dataVal1.Add("qversion", version)
-	dataVal1.Add("ts", fmt.Sprintf("%d", timestamp))
+	dataVal1.Add("ts", strconv.FormatInt(timestamp, 10))
 	req1, err := http.NewRequest("POST", "https://qapplogin.m.jd.com/cgi-bin/qapp/quick", strings.NewReader(dataVal1.Encode()))
 	if err != nil {
 		return nil, err
@@ -90,13 +90,17 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("semdSms r1=%s", string(r))
-	g1 := gjson.ParseBytes(r).Get("data")
+
+	g1 := gjson.ParseBytes(r)
+	log.Printf("semdSms r1=%s", g1.Raw)
+	if !g1.Get("data").Exists() {
+		return nil, errors.New("接口错误")
+	}
 	ck := SmsSession{
-		Guid:       g1.Get("guid").String(),
-		Lsid:       g1.Get("lsid").String(),
-		Gsalt:      g1.Get("gsalt").String(),
-		RsaModulus: g1.Get("rsa_modulus").String(),
+		Guid:       g1.Get("data.guid").String(),
+		Lsid:       g1.Get("data.lsid").String(),
+		Gsalt:      g1.Get("data.gsalt").String(),
+		RsaModulus: g1.Get("data.rsa_modulus").String(),
 		Phone:      phone,
 	}
 	subCmd = 2
@@ -132,30 +136,18 @@ func (s *httpServer) sendSms(c *gin.Context) (*SmsSession, error) {
 		defer res2.Body.Close()
 	}
 	r2, err := io.ReadAll(res2.Body)
-	log.Printf("semdSms r2=%s", string(r))
 	if err != nil {
 		return nil, err
 	}
-	if !gjson.ValidBytes(r2) {
-		return nil, errors.New("接口访问失败")
-	}
 	g2 := gjson.ParseBytes(r2)
-	// log.Println("code code response :", string(r2))
+	log.Printf("semdSms r2=%s", g2.Raw)
+	if !g2.Get("err_code").Exists() {
+		return nil, errors.New("接口调用失败")
+	}
+	// log.Println("code code response :", g2.Raw)
 	ck.ErrCode = g2.Get("err_code").Int()
 	ck.ErrMsg = g2.Get("err_msg").String()
-	if g2.Get("data.rsa_modulus").Exists() {
-		ck.RsaModulus = g2.Get("data.rsa_modulus").String()
-	}
-	if g2.Get("data.gsalt").Exists() {
-		ck.Gsalt = g2.Get("data.gsalt").String()
-	}
-	if g2.Get("data.lsid").Exists() {
-		ck.Lsid = g2.Get("data.lsid").String()
-	}
-	if g2.Get("data.guid").Exists() {
-		ck.Guid = g2.Get("data.guid").String()
-	}
-	// _ = s.updateCookieJar(c, jar)
+	_ = s.updateCookieJar(c, jar)
 	if ck.ErrCode != 0 {
 		return nil, errors.New(ck.ErrMsg)
 	}
@@ -185,7 +177,7 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 		timestamp   = time.Now().UnixMilli()
 		cmd         = 36
 		subCmd      = 3
-		gsign       = util.Md5(fmt.Sprintf("%d%s%d%d%d%s", appid, version, timestamp, cmd, subCmd, smsSession.Gsalt))
+		gsign       = util.Md5(strconv.Itoa(appid) + version + strconv.FormatInt(timestamp, 10) + strconv.Itoa(cmd) + strconv.Itoa(subCmd) + smsSession.Gsalt)
 	)
 	dataVal := url.Values{}
 	dataVal.Add("country_code", strconv.Itoa(countryCode))
@@ -198,12 +190,13 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	dataVal.Add("sub_cmd", strconv.Itoa(subCmd))
 	dataVal.Add("gversion", version)
 	dataVal.Add("ts", strconv.FormatInt(timestamp, 10))
-	// jar := s.getCookieJar(c)
+	jar := s.getCookieJar(c)
 	client := &http.Client{
-		// Jar:       jar,
+		Jar:       jar,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		Timeout:   time.Second * 10,
 	}
+	log.Printf("post params : %s", dataVal.Encode())
 	req, err := http.NewRequest("POST", "https://qapplogin.m.jd.com/cgi-bin/qapp/quick", strings.NewReader(dataVal.Encode()))
 	if err != nil {
 		return nil, err
@@ -225,11 +218,11 @@ func (s *httpServer) checkCode(c *gin.Context) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !gjson.ValidBytes(r) {
+	g := gjson.ParseBytes(r)
+	log.Println("check code response :", g.Raw)
+	if !g.Get("err_code").Exists() {
 		return nil, errors.New("接口访问失败")
 	}
-	g := gjson.ParseBytes(r)
-	log.Println("check code response :", string(r))
 	if g.Get("err_code").Int() > 0 {
 		return nil, errors.New(g.Get("err_msg").String())
 	}
@@ -292,6 +285,7 @@ func (s *httpServer) checkSmsCode(ctx *gin.Context) {
 			"title": "参数错误",
 			"msg":   "请输入手机验证码",
 		})
+		s.cleanSession(ctx)
 		return
 	}
 	if !regexp.MustCompile(`^\d{6}$`).MatchString(code) {
@@ -300,6 +294,8 @@ func (s *httpServer) checkSmsCode(ctx *gin.Context) {
 			"title": "参数错误",
 			"msg":   "请输入6位验证码",
 		})
+		s.cleanSession(ctx)
+		return
 	}
 	tk, err := s.checkCode(ctx)
 	if err != nil {
@@ -308,6 +304,7 @@ func (s *httpServer) checkSmsCode(ctx *gin.Context) {
 			"title": "校验验证码失败",
 			"msg":   err.Error(),
 		})
+		s.cleanSession(ctx)
 		return
 	}
 	ctx.JSON(http.StatusOK, MSG{
