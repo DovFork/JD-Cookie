@@ -1,4 +1,4 @@
-FROM golang:1.17 as builder
+FROM golang:1.17-buster as builder
 
 
 LABEL name="jd_cookie server"
@@ -6,7 +6,7 @@ LABEL version="3.0.1"
 LABEL author="scjtqs <scjtqs@qq.com>"
 LABEL maintainer="scjtqs <scjtqs@qq.com>"
 LABEL description="simple to get jd cookie"
-
+COPY ./sources.list /etc/apt/sources.list
 ARG Version="v3.0.1"
 
 ADD . /src
@@ -21,7 +21,7 @@ ENV GO111MODULE "on"
 
 RUN cd /src \
     && apt-get update \
-    && apt-get install -y build-essential openssl git make openssh-client \
+    && apt-get install -y build-essential openssl git\
     && rm -rf /var/lib/apt/lists/*apt \
     && rm -rf dist \
     && go mod tidy \
