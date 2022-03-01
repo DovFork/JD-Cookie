@@ -386,7 +386,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 	// //发送数据给 挂机服务器
 	postUrl := s.Conf.UpSave
 	if postUrl != "" {
-		var res MSG
+		var res string
 		code := 0
 		var err error
 		switch strings.ToUpper(s.Conf.UpSaveMethod) {
@@ -398,7 +398,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 						s.Conf.UpSaveKey: token.UserCookie,
 					},
 				).
-				BindJSON(&res).
+				BindBody(&res).
 				SetHeader(gout.H{
 					"Connection": "Keep-Alive",
 					"Accept":     "application/json, text/plain, */*",
@@ -417,7 +417,7 @@ func (s *httpServer) upsave(c *gin.Context) {
 						s.Conf.UpSaveKey: token.UserCookie,
 					},
 				).
-				BindJSON(&res).
+				BindBody(&res).
 				SetHeader(gout.H{
 					"Connection":   "Keep-Alive",
 					"Content-Type": "application/x-www-form-urlencoded; Charset=UTF-8",
@@ -441,23 +441,12 @@ func (s *httpServer) upsave(c *gin.Context) {
 				"title": "更新到挂机服务器失败",
 				"msg":   errmsg,
 			})
+			return
 		} else {
-			errcode := res["err"]
-			if errcode == nil {
-				errcode = 0
-			}
-			title := res["title"]
-			if title == nil {
-				title = "更新到挂机服务成功"
-			}
-			msg := res["msg"]
-			if msg == nil {
-				msg = "cookie= " + token.UserCookie
-			}
 			c.JSON(200, MSG{
-				"err":   errcode,
-				"title": title,
-				"msg":   fmt.Sprintf("%s, cookie= %s", msg, token.UserCookie),
+				"err":   0,
+				"title": "已推送到指定服务器",
+				"msg":   fmt.Sprintf("%s, cookie= %s", res, token.UserCookie),
 			})
 		}
 		return
